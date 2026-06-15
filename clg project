@@ -1,0 +1,432 @@
+microproject2
+/*
+ * ============================================================
+ *   AI-Assisted Student Feedback & Suggestion System
+ * ============================================================
+ *   Developers : Student 1 - Kanak Jha
+ *                Student 2 - Abhimanyu Singh
+ *   Semester   : IInd Semester Mini Project
+ *   Language   : C++ (Basic - No advanced libraries)
+ * ============================================================
+ *
+ *   Libraries used (only basics):
+ *     iostream  - for input/output (cin, cout)
+ *     fstream   - for saving to file
+ *     string    - for text handling
+ *
+ *   Concepts used:
+ *     struct, arrays, for loops, if-else,
+ *     functions, do-while loop, file handling
+ * ============================================================
+ */
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// ─────────────────────────────────────────────
+//  CONSTANT - max number of feedback allowed
+// ─────────────────────────────────────────────
+
+const int MAX = 100;
+
+// ─────────────────────────────────────────────
+//  STRUCT - holds one feedback record
+// ─────────────────────────────────────────────
+
+struct Feedback {
+    int    id;
+    string name;
+    string rollNo;
+    string category;
+    string text;
+    string sentiment;
+    string suggestion;
+};
+
+// ─────────────────────────────────────────────
+//  GLOBAL VARIABLES
+// ─────────────────────────────────────────────
+
+Feedback db[MAX];      // array to store all feedback
+int total  = 0;        // count of feedbacks stored
+int nextId = 1;        // ID counter
+
+// ─────────────────────────────────────────────
+//  FUNCTION: convert string to lowercase
+//  (so keyword search is case-insensitive)
+// ─────────────────────────────────────────────
+
+string toLower(string s) {
+    for (int i = 0; i < s.length(); i++) {
+        if (s[i] >= 'A' && s[i] <= 'Z') {
+            s[i] = s[i] + 32;
+        }
+    }
+    return s;
+}
+
+// ─────────────────────────────────────────────
+//  FUNCTION: check if a keyword is in text
+// ─────────────────────────────────────────────
+
+bool hasWord(string text, string word) {
+    text = toLower(text);
+    word = toLower(word);
+    int tLen = text.length();
+    int wLen = word.length();
+    for (int i = 0; i <= tLen - wLen; i++) {
+        if (text.substr(i, wLen) == word) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// ─────────────────────────────────────────────
+//  FUNCTION: AI Sentiment Analysis
+//  Rule-based: counts positive vs negative words
+// ─────────────────────────────────────────────
+
+string analyzeSentiment(string text) {
+    string pos[20] = {
+        "good","great","excellent","amazing","helpful",
+        "clear","best","love","enjoy","wonderful",
+        "fantastic","nice","happy","clean","comfortable",
+        "outstanding","effective","brilliant","superb","satisfied"
+    };
+
+    string neg[20] = {
+        "bad","poor","boring","terrible","awful",
+        "slow","dirty","broken","useless","rude",
+        "unfair","worst","hate","noisy","confusing",
+        "late","absent","dull","old","disappointing"
+    };
+
+    int posScore = 0;
+    int negScore = 0;
+
+    for (int i = 0; i < 20; i++) {
+        if (hasWord(text, pos[i])) posScore++;
+    }
+
+    for (int i = 0; i < 20; i++) {
+        if (hasWord(text, neg[i])) negScore++;
+    }
+
+    if (posScore > negScore)  return "Positive";
+    if (negScore > posScore)  return "Negative";
+    return "Neutral";
+}
+
+// ─────────────────────────────────────────────
+//  FUNCTION: return suggestion based on
+//  category and sentiment
+// ─────────────────────────────────────────────
+
+string getSuggestion(string cat, string sent) {
+
+    if (cat == "Teaching") {
+        if (sent == "Positive") return "Great! Faculty should keep using this teaching style.";
+        if (sent == "Negative") return "Faculty should use visual aids and hold extra doubt sessions.";
+        return "Faculty can add more real-world examples to improve lectures.";
+    }
+
+    if (cat == "Faculty") {
+        if (sent == "Positive") return "Faculty behaviour is appreciated. Keep it up!";
+        if (sent == "Negative") return "Administration should review faculty conduct and provide training.";
+        return "Faculty should be more approachable and interactive with students.";
+    }
+
+    if (cat == "Facilities") {
+        if (sent == "Positive") return "Facilities are good. Continue regular maintenance.";
+        if (sent == "Negative") return "Immediate action needed: fix equipment and improve cleanliness.";
+        return "Upgrade aging equipment and improve WiFi coverage.";
+    }
+
+    // Overall (default)
+    if (sent == "Positive") return "Overall experience is positive. Maintain current standards.";
+    if (sent == "Negative") return "Management must address all student issues urgently.";
+    return "Conduct a student survey to find specific areas to improve.";
+}
+
+// ─────────────────────────────────────────────
+//  UTILITY: print a separator line
+// ─────────────────────────────────────────────
+
+void line() {
+    cout << "--------------------------------------------" << endl;
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE 1: Submit Feedback
+// ─────────────────────────────────────────────
+
+void submitFeedback() {
+    if (total >= MAX) {
+        cout << "Storage full!" << endl;
+        return;
+    }
+
+    cout << endl;
+    cout << "======= SUBMIT FEEDBACK =======" << endl;
+
+    Feedback fb;
+    fb.id = nextId;
+    nextId++;
+
+    cout << "Your name      : ";
+    getline(cin, fb.name);
+
+    cout << "Roll number    : ";
+    getline(cin, fb.rollNo);
+
+    cout << endl;
+    cout << "Select category:" << endl;
+    cout << "  1. Teaching Method" << endl;
+    cout << "  2. Faculty Behaviour" << endl;
+    cout << "  3. Campus Facilities" << endl;
+    cout << "  4. Overall Experience" << endl;
+    cout << "Choice (1-4)   : ";
+
+    int ch;
+    cin >> ch;
+    cin.ignore();
+
+    if      (ch == 1) fb.category = "Teaching";
+    else if (ch == 2) fb.category = "Faculty";
+    else if (ch == 3) fb.category = "Facilities";
+    else              fb.category = "Overall";
+
+    cout << "Your feedback  : ";
+    getline(cin, fb.text);
+
+    if (fb.text == "") {
+        cout << "Feedback cannot be empty!" << endl;
+        return;
+    }
+
+    // Run AI analysis
+    fb.sentiment  = analyzeSentiment(fb.text);
+    fb.suggestion = getSuggestion(fb.category, fb.sentiment);
+
+    // Save in array
+    db[total] = fb;
+    total++;
+
+    cout << endl;
+    line();
+    cout << "Feedback submitted! ID: #" << fb.id << endl;
+    cout << "Sentiment  : " << fb.sentiment << endl;
+    cout << "Suggestion : " << fb.suggestion << endl;
+    line();
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE 2: View All Feedback
+// ─────────────────────────────────────────────
+
+void viewAll() {
+    cout << endl;
+    cout << "======= ALL FEEDBACK =======" << endl;
+
+    if (total == 0) {
+        cout << "No records found." << endl;
+        return;
+    }
+
+    for (int i = 0; i < total; i++) {
+        cout << endl;
+        cout << "ID         : #" << db[i].id << endl;
+        cout << "Name       : " << db[i].name << endl;
+        cout << "Roll No    : " << db[i].rollNo << endl;
+        cout << "Category   : " << db[i].category << endl;
+        cout << "Feedback   : " << db[i].text << endl;
+        cout << "Sentiment  : " << db[i].sentiment << endl;
+        cout << "Suggestion : " << db[i].suggestion << endl;
+        line();
+    }
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE 3: Sentiment Report
+// ─────────────────────────────────────────────
+
+void showReport() {
+    cout << endl;
+    cout << "======= SENTIMENT REPORT =======" << endl;
+
+    if (total == 0) {
+        cout << "No data available." << endl;
+        return;
+    }
+
+    int pos = 0, neu = 0, neg = 0;
+
+    for (int i = 0; i < total; i++) {
+        if      (db[i].sentiment == "Positive") pos++;
+        else if (db[i].sentiment == "Negative") neg++;
+        else                                    neu++;
+    }
+
+    cout << "Total    : " << total << " feedback(s)" << endl;
+    line();
+    cout << "Positive : " << pos << endl;
+    cout << "Neutral  : " << neu << endl;
+    cout << "Negative : " << neg << endl;
+    line();
+
+    if (pos >= neg && pos >= neu)
+        cout << "Result: GOOD - Students are mostly satisfied." << endl;
+    else if (neg > pos)
+        cout << "Result: POOR - Action needed! Many students are unhappy." << endl;
+    else
+        cout << "Result: AVERAGE - Some improvements are needed." << endl;
+
+    line();
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE 4: Search by Roll Number
+// ─────────────────────────────────────────────
+
+void searchByRoll() {
+    cout << endl;
+    cout << "======= SEARCH FEEDBACK =======" << endl;
+    cout << "Enter roll number: ";
+
+    string roll;
+    getline(cin, roll);
+
+    bool found = false;
+
+    for (int i = 0; i < total; i++) {
+        if (toLower(db[i].rollNo) == toLower(roll)) {
+            found = true;
+            cout << endl;
+            cout << "ID         : #" << db[i].id << endl;
+            cout << "Name       : " << db[i].name << endl;
+            cout << "Category   : " << db[i].category << endl;
+            cout << "Feedback   : " << db[i].text << endl;
+            cout << "Sentiment  : " << db[i].sentiment << endl;
+            cout << "Suggestion : " << db[i].suggestion << endl;
+            line();
+        }
+    }
+
+    if (!found) {
+        cout << "No record found for: " << roll << endl;
+    }
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE 5: Save Report to File
+// ─────────────────────────────────────────────
+
+void saveToFile() {
+    cout << endl;
+
+    if (total == 0) {
+        cout << "No data to save." << endl;
+        return;
+    }
+
+    ofstream file("report.txt");
+
+    if (!file) {
+        cout << "Error: Cannot create file." << endl;
+        return;
+    }
+
+    int pos = 0, neu = 0, neg = 0;
+
+    file << "AI-Assisted Student Feedback Report" << endl;
+    file << "====================================" << endl;
+    file << "Total Feedback: " << total << endl << endl;
+
+    for (int i = 0; i < total; i++) {
+        file << "ID         : #" << db[i].id << endl;
+        file << "Name       : " << db[i].name << endl;
+        file << "Roll No    : " << db[i].rollNo << endl;
+        file << "Category   : " << db[i].category << endl;
+        file << "Feedback   : " << db[i].text << endl;
+        file << "Sentiment  : " << db[i].sentiment << endl;
+        file << "Suggestion : " << db[i].suggestion << endl;
+        file << "--------------------------------------------" << endl;
+
+        if      (db[i].sentiment == "Positive") pos++;
+        else if (db[i].sentiment == "Negative") neg++;
+        else                                    neu++;
+    }
+
+    file << endl << "SUMMARY" << endl;
+    file << "Positive : " << pos << endl;
+    file << "Neutral  : " << neu << endl;
+    file << "Negative : " << neg << endl;
+    file.close();
+
+    cout << "Report saved to report.txt!" << endl;
+}
+
+// ─────────────────────────────────────────────
+//  MAIN FUNCTION
+// ─────────────────────────────────────────────
+
+int main() {
+
+    // --- Pre-loaded demo records ---
+    db[0].id         = nextId++;
+    db[0].name       = "Rahul Sharma";
+    db[0].rollNo     = "CS2001";
+    db[0].category   = "Teaching";
+    db[0].text       = "The teacher explains everything clearly. Lectures are great and helpful.";
+    db[0].sentiment  = analyzeSentiment(db[0].text);
+    db[0].suggestion = getSuggestion(db[0].category, db[0].sentiment);
+
+    db[1].id         = nextId++;
+    db[1].name       = "Priya Patel";
+    db[1].rollNo     = "CS2002";
+    db[1].category   = "Facilities";
+    db[1].text       = "Lab computers are old and broken. WiFi is very slow and awful.";
+    db[1].sentiment  = analyzeSentiment(db[1].text);
+    db[1].suggestion = getSuggestion(db[1].category, db[1].sentiment);
+
+    total = 2;
+    // --------------------------------
+
+    int choice;
+
+    do {
+        cout << endl;
+        cout <<"               MITS GWALIOR                  "<< endl;
+        cout << "============================================" << endl;
+        cout << "  AI-Assisted Student Feedback System" << endl;
+        cout << "  Developers: Kanak Jha & Abhimanyu Singh "<< endl;
+        cout << "  IInd Semester Micro Project - C++" << endl;
+        cout << "============================================" << endl;
+        cout << "  1. Submit Feedback" << endl;
+        cout << "  2. View All Feedback" << endl;
+        cout << "  3. Sentiment Report" << endl;
+        cout << "  4. Search by Roll Number" << endl;
+        cout << "  5. Save Report to File" << endl;
+        cout << "  0. Exit" << endl;
+        cout << "============================================" << endl;
+        cout << "Enter choice: ";
+
+        cin >> choice;
+        cin.ignore();
+
+        if      (choice == 1) submitFeedback();
+        else if (choice == 2) viewAll();
+        else if (choice == 3) showReport();
+        else if (choice == 4) searchByRoll();
+        else if (choice == 5) saveToFile();
+        else if (choice == 0) cout << "Goodbye!" << endl;
+        else                  cout << "Invalid choice. Try again." << endl;
+
+    } while (choice != 0);
+
+    return 0;
+}
